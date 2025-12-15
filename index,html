@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Bézier Rope</title>
+<style>
+body{margin:0;overflow:hidden;background:#111}
+canvas{display:block}
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<script>
+const c=document.getElementById("c"),g=c.getContext("2d")
+const R=()=>{c.width=innerWidth;c.height=innerHeight}
+addEventListener("resize",R);R()
+
+const P0={x:100,y:c.height/2},P3={x:c.width-100,y:c.height/2}
+const P1={x:300,y:c.height/2-120,vx:0,vy:0,tx:300,ty:c.height/2-120}
+const P2={x:c.width-300,y:c.height/2+120,vx:0,vy:0,tx:c.width-300,ty:c.height/2+120}
+
+const k=20,d=5,dt=1/60
+let mx=c.width/2,my=c.height/2
+
+c.onmousemove=e=>{
+  mx=e.clientX; my=e.clientY
+  P1.tx=P1.x+(mx-P1.x)*0.2; P1.ty=P1.y+(my-P1.y)*0.2
+  P2.tx=P2.x+(mx-P2.x)*0.2; P2.ty=P2.y+(my-P2.y)*0.2
+}
+
+function step(p){
+  let ax=(p.tx-p.x)*k-p.vx*d
+  let ay=(p.ty-p.y)*k-p.vy*d
+  p.vx+=ax*dt; p.vy+=ay*dt
+  p.x+=p.vx*dt; p.y+=p.vy*dt
+}
+
+function B(t){
+  let u=1-t,uu=u*u,tt=t*t
+  return {
+    x:uu*u*P0.x+3*uu*t*P1.x+3*u*tt*P2.x+tt*t*P3.x,
+    y:uu*u*P0.y+3*uu*t*P1.y+3*u*tt*P2.y+tt*t*P3.y
+  }
+}
+
+function T(t){
+  let u=1-t
+  let x=3*u*u*(P1.x-P0.x)+6*u*t*(P2.x-P1.x)+3*t*t*(P3.x-P2.x)
+  let y=3*u*u*(P1.y-P0.y)+6*u*t*(P2.y-P1.y)+3*t*t*(P3.y-P2.y)
+  let l=Math.hypot(x,y)||1
+  return {x:x/l,y:y/l}
+}
+
+function draw(){
+  g.clearRect(0,0,c.width,c.height)
+
+  g.beginPath()
+  for(let t=0;t<=1;t+=0.02){
+    let p=B(t)
+    t?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y)
+  }
+  g.strokeStyle="#00ffcc";g.lineWidth=3;g.stroke()
+
+  g.strokeStyle="#ff5555"
+  for(let t=0;t<=1;t+=0.15){
+    let p=B(t),q=T(t)
+    g.beginPath()
+    g.moveTo(p.x,p.y)
+    g.lineTo(p.x+q.x*30,p.y+q.y*30)
+    g.stroke()
+  }
+
+  g.fillStyle="#fff"
+  ;[P0,P3].forEach(p=>{
+    g.beginPath();g.arc(p.x,p.y,6,0,6.28);g.fill()
+  })
+  g.fillStyle="#ffaa00"
+  ;[P1,P2].forEach(p=>{
+    g.beginPath();g.arc(p.x,p.y,6,0,6.28);g.fill()
+  })
+}
+
+function loop(){
+  step(P1); step(P2)
+  draw()
+  requestAnimationFrame(loop)
+}
+loop()
+</script>
+
+</body>
+</html>
